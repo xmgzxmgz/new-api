@@ -1,10 +1,24 @@
+# Backend-only build for new-api
+# Skips frontend build since the frontend is served separately
+
+FROM golang:1.26.1-alpine AS frontend
+RUN mkdir -p /build/web/dist && echo '<!DOCTYPE html><title>API Only</title>' > /build/web/dist/index.html
+
 FROM golang:1.26.1-alpine AS builder
+ENV GO111MODULE=on CGO_ENABLED=0
+ENV GOEXPERIMENT=greenteagc
 
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
+
+# Copy source, excluding web/node_modules and web/dist via dockerignore
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o new-api main.go
+
+# Override web/dist with dummy
+COPY --from=frontend /build/web/dist ./web/dist
+
+RUN go build -ldflags="-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION 2>/dev/null || echo dev)'" -o new-api .
 
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates tzdata
