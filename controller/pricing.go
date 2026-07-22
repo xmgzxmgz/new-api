@@ -76,6 +76,29 @@ func GetPricing(c *gin.Context) {
 	})
 }
 
+// GetPublicModels returns only models from enabled channels (public, no auth required)
+func GetPublicModels(c *gin.Context) {
+	pricing := model.GetPricing()
+	enabledModels := model.GetEnabledModels()
+	enabledSet := make(map[string]bool, len(enabledModels))
+	for _, m := range enabledModels {
+		enabledSet[m] = true
+	}
+
+	filtered := make([]model.Pricing, 0)
+	for _, p := range pricing {
+		if enabledSet[p.ModelName] {
+			filtered = append(filtered, p)
+		}
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    filtered,
+		"vendors": model.GetVendors(),
+	})
+}
+
 func ResetModelRatio(c *gin.Context) {
 	defaultStr := ratio_setting.DefaultModelRatio2JSONString()
 	err := model.UpdateOption("ModelRatio", defaultStr)
