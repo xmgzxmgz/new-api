@@ -25,4 +25,4 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=builder /build/new-api .
 EXPOSE 3000
-CMD ["./new-api"]
+ENTRYPOINT ["/app/new-api"]
